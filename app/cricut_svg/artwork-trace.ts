@@ -1,12 +1,13 @@
 // Client-side cut contour preparation. The output is path geometry, never an
 // <image> element. Keep tracing separate from nesting so it can be replaced by
 // a more sophisticated vectorizer without changing the mat optimizer.
+import svgpath from "svgpath";
 import { svgPathBbox } from "svg-path-bbox";
 
 export type ArtworkOutline = {
   path: string;
   bounds: { x1: number; y1: number; x2: number; y2: number };
-  fillRule: "evenodd";
+  fillRule: "evenodd" | "nonzero";
   pathCount: number;
 };
 type Point = { x: number; y: number };
@@ -76,7 +77,37 @@ function contourPath(points: Point[], detailScale: number): string {
   }).join("") + "Z";
 }
 
+// Preserve the original geometry of a self-contained, filled compound path.
+async function readVectorOutline(file: Blob): Promise<ArtworkOutline> {
+  const document = new DOMParser().parseFromString(await file.text(), "image/svg+xml");
+  const root = document.documentElement;
+  const element = root.firstElementChild;
+  const allowedRoot = new Set(["xmlns", "width", "height", "viewBox", "version", "fill", "fill-rule"]);
+  const allowedPath = new Set(["d", "id", "fill", "fill-rule"]);
+  const path = element?.getAttribute("d")?.trim() ?? "";
+  const fillRule = element?.getAttribute("fill-rule") ?? root.getAttribute("fill-rule") ?? "nonzero";
+  const fill = element?.getAttribute("fill") ?? root.getAttribute("fill") ?? "black";
+  const contours = path.split(/(?=[Mm])/);
+  if (document.doctype || root.localName !== "svg" || root.namespaceURI !== "http://www.w3.org/2000/svg" ||
+      root.children.length !== 1 || element?.localName !== "path" ||
+      element.namespaceURI !== root.namespaceURI || element.children.length ||
+      Array.from(root.attributes).some(attribute => !allowedRoot.has(attribute.name)) ||
+      Array.from(element.attributes).some(attribute => !allowedPath.has(attribute.name)) ||
+      !/^(?:#[\da-f]{3}|#[\da-f]{6}|[a-z]+)$/i.test(fill) || /^(?:none|transparent)$/i.test(fill) ||
+      (fillRule !== "evenodd" && fillRule !== "nonzero") ||
+      !/^[Mm][MmLlHhVvCcSsQqTtAaZz\d.eE+\s,-]*$/.test(path) ||
+      contours.some(contour => !/[Zz]$/.test(contour.trim())) || svgpath(path).err) {
+    throw new Error("Upload an SVG with one closed, filled path or compound path and no transforms or effects.");
+  }
+  const [x1, y1, x2, y2] = svgPathBbox(path);
+  if (![x1, y1, x2, y2].every(Number.isFinite) || x2 <= x1 || y2 <= y1) {
+    throw new Error("The SVG has no usable cut contour.");
+  }
+  return { path, bounds: { x1, y1, x2, y2 }, fillRule, pathCount: contours.length };
+}
+
 export async function traceArtwork(file: Blob, threshold: number, invert: boolean, minArea: number): Promise<ArtworkOutline> {
+  if (file.type === "image/svg+xml") return readVectorOutline(file);
   const bitmap = await createImageBitmap(file);
   try {
     const size = Math.min(1, 1300 / Math.max(bitmap.width, bitmap.height));
