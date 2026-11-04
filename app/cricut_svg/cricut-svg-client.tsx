@@ -63,14 +63,22 @@ export default function CricutSvgClient({ initialOrderNumber = "" }: { initialOr
     updateArtwork(row.id, { sizeBy, sizeValue: size ? formatArtworkCm(sizeBy === "width" ? size.widthCm : size.heightCm) : "" });
   }
   async function chooseArtwork(id: string, file: File) {
-    if (!["image/png", "image/jpeg"].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024) {
-      setError("Select a PNG, JPG, or JPEG image under 5 MB."); return;
+    if (!["image/png", "image/jpeg", "image/svg+xml"].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024) {
+      setError("Select a PNG, JPG, JPEG, or SVG image under 5 MB."); return;
     }
-    let bitmap: ImageBitmap;
-    try { bitmap = await createImageBitmap(file); }
-    catch { setError("Could not read this image. Choose another PNG, JPG, or JPEG."); return; }
-    const imageBounds = { x1: 0, y1: 0, x2: bitmap.width, y2: bitmap.height };
-    bitmap.close();
+    let imageBounds: ArtworkBounds;
+    try {
+      if (file.type === "image/svg+xml") {
+        imageBounds = (await traceArtwork(file, 128, false, 0)).bounds;
+      } else {
+        const bitmap = await createImageBitmap(file);
+        imageBounds = { x1: 0, y1: 0, x2: bitmap.width, y2: bitmap.height };
+        bitmap.close();
+      }
+    } catch (error) {
+      setError(file.type === "image/svg+xml" && error instanceof Error ? error.message : "Could not read this image.");
+      return;
+    }
     const previous = artworks.find(r => r.id === id)?.preview;
     if (previous) URL.revokeObjectURL(previous);
     updateArtwork(id, { file, preview: URL.createObjectURL(file), imageBounds, outline: null, approved: false });
@@ -158,7 +166,7 @@ export default function CricutSvgClient({ initialOrderNumber = "" }: { initialOr
       if (!dimensions) throw new Error(`Image ${i + 1}: the cut contour has invalid dimensions.`);
       const scale = requestedCm * 10 / (r.sizeBy === "width" ? b.x2 - b.x1 : b.y2 - b.y1);
       const design: Design = { id: r.id, sequence: 0, content: r.file.name, fontCode: "IMAGE", path: r.outline.path,
-        fillRule: "evenodd", bounds: { x1: b.x1, y1: b.y1 }, scale, width: dimensions.widthCm * 10, height: dimensions.heightCm * 10 };
+        fillRule: r.outline.fillRule, bounds: { x1: b.x1, y1: b.y1 }, scale, width: dimensions.widthCm * 10, height: dimensions.heightCm * 10 };
       for (let j = 0; j < count; j++) designs.push({ ...design, sequence: designs.length });
       if (designs.length > 250) throw new Error("Limit this batch to 250 individual designs.");
     }
@@ -274,7 +282,7 @@ export default function CricutSvgClient({ initialOrderNumber = "" }: { initialOr
           <div className={styles.artworkInputs}>
             <label>Customer image link<input type="url" placeholder="Paste link from WhatsApp" value={r.link} onChange={e => updateArtwork(r.id, { link: e.target.value })} /></label>
             <button type="button" className={styles.secondary} disabled={!!artworkBusy} onClick={() => { void importLink(r.id); }}>Load image</button>
-            <label>Or upload PNG / JPG<input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" onChange={e => { const file = e.target.files?.[0]; if (file) void chooseArtwork(r.id, file); }} /></label>
+            <label>Or upload PNG / JPG / SVG<input type="file" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml" onChange={e => { const file = e.target.files?.[0]; if (file) void chooseArtwork(r.id, file); }} /></label>
           </div>
           <div className={styles.artworkControls}>
             <label>Set size by<select value={r.sizeBy} onChange={e => setArtworkSizeBy(r, e.target.value as ArtworkSizeMode)}><option value="width">Width</option><option value="height">Height</option></select></label>
@@ -291,7 +299,7 @@ export default function CricutSvgClient({ initialOrderNumber = "" }: { initialOr
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={r.preview} alt={`Original customer image ${index + 1}`} />
             </div>
-            {r.outline && <div><span>Cut contour · {r.outline.pathCount} shapes</span><svg viewBox={`${r.outline.bounds.x1} ${r.outline.bounds.y1} ${r.outline.bounds.x2-r.outline.bounds.x1} ${r.outline.bounds.y2-r.outline.bounds.y1}`} role="img" aria-label={`Cut contour for image ${index + 1}`}><path d={r.outline.path} fill="#211b18" fillRule="evenodd" /></svg></div>}
+            {r.outline && <div><span>Cut contour · {r.outline.pathCount} shapes</span><svg viewBox={`${r.outline.bounds.x1} ${r.outline.bounds.y1} ${r.outline.bounds.x2-r.outline.bounds.x1} ${r.outline.bounds.y2-r.outline.bounds.y1}`} role="img" aria-label={`Cut contour for image ${index + 1}`}><path d={r.outline.path} fill="#211b18" fillRule={r.outline.fillRule} /></svg></div>}
           </div>}
           <div className={styles.actions}><button type="button" className={styles.secondary} disabled={!r.file || !!artworkBusy} onClick={() => { void prepareArtwork(r.id); }}>{artworkBusy === r.id ? "Preparing…" : "Prepare cut contour"}</button>
             {r.outline && <label className={styles.artworkCheck}><input type="checkbox" checked={r.approved} onChange={e => updateArtwork(r.id, { approved: e.target.checked })} /> I checked the cut contour and approve this image</label>}</div>
