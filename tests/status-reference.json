@@ -1,0 +1,254 @@
+{
+  "statuses": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "status_code": "ORDER_RECEIVED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "status_code": "PAYMENT_PENDING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "status_code": "PHOTO_PENDING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "status_code": "CUSTOMER_APPROVAL_PENDING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "status_code": "DESIGN_APPROVAL_PENDING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "status_code": "DESIGN_APPROVED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "status_code": "ORDER_CONFIRMED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "status_code": "PHOTO_RECEIVED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "status_code": "PREPARING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "status_code": "DESIGN_IN_PROGRESS",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "status_code": "FINISHING_IN_PROGRESS",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "status_code": "PACKAGING_IN_PROGRESS",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "status_code": "PACKED",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "status_code": "PROCESSING",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "status_code": "PRODUCTION_IN_PROGRESS",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "status_code": "QUALITY_CHECK",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "status_code": "READY_FOR_PICKUP",
+      "fulfillment_method": "Pickup",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "status_code": "RESIN_CASTING_IN_PROGRESS",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000019",
+      "status_code": "DISPATCHED",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 4
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000020",
+      "status_code": "READY_FOR_DISPATCH",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 4
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "status_code": "SHIPPED",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 4
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "status_code": "OUT_FOR_DELIVERY",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 5
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "status_code": "READY_FOR_DELIVERY",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 5
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000024",
+      "status_code": "COMPLETED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 6
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000025",
+      "status_code": "DELIVERED",
+      "fulfillment_method": "Delivery",
+      "is_active": true,
+      "display_order": 6
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000026",
+      "status_code": "PICKED_UP",
+      "fulfillment_method": "Pickup",
+      "is_active": true,
+      "display_order": 6
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000027",
+      "status_code": "CANCELLED",
+      "fulfillment_method": "Both",
+      "is_active": true,
+      "display_order": 99
+    }
+  ],
+  "dropdown": [
+    "ORDER_RECEIVED",
+    "PAYMENT_PENDING",
+    "PHOTO_PENDING",
+    "PHOTO_RECEIVED",
+    "ORDER_CONFIRMED",
+    "PREPARING",
+    "PROCESSING",
+    "DESIGN_APPROVAL_PENDING",
+    "CUSTOMER_APPROVAL_PENDING",
+    "DESIGN_APPROVED",
+    "DESIGN_IN_PROGRESS",
+    "PRODUCTION_IN_PROGRESS",
+    "RESIN_CASTING_IN_PROGRESS",
+    "FINISHING_IN_PROGRESS",
+    "QUALITY_CHECK",
+    "PACKAGING_IN_PROGRESS",
+    "PACKED",
+    "READY_FOR_PICKUP",
+    "PICKED_UP",
+    "READY_FOR_DISPATCH",
+    "DISPATCHED",
+    "SHIPPED",
+    "READY_FOR_DELIVERY",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+    "COMPLETED",
+    "CANCELLED"
+  ],
+  "couriers": [
+    {
+      "id": "00000000-0000-4000-9000-000000000001",
+      "courier_name": "Blue Dart",
+      "is_active": true
+    },
+    {
+      "id": "00000000-0000-4000-9000-000000000002",
+      "courier_name": "Delhivery",
+      "is_active": true
+    },
+    {
+      "id": "00000000-0000-4000-9000-000000000003",
+      "courier_name": "DTDC",
+      "is_active": true
+    },
+    {
+      "id": "00000000-0000-4000-9000-000000000004",
+      "courier_name": "Ekart",
+      "is_active": true
+    },
+    {
+      "id": "00000000-0000-4000-9000-000000000005",
+      "courier_name": "India Post",
+      "is_active": true
+    },
+    {
+      "id": "00000000-0000-4000-9000-000000000006",
+      "courier_name": "XpressBees",
+      "is_active": true
+    }
+  ]
+}

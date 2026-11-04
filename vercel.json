@@ -1,0 +1,32 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/google-sheet-sync",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "purelyjid-order-tracker\\.vercel\\.app"
+        }
+      ],
+      "destination": "https://www.purelyjid.in/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "purelyjid-order-tracker\\.vercel\\.app"
+        }
+      ],
+      "destination": "https://www.purelyjid.in/:path*",
+      "permanent": true
+    }
+  ]
+}

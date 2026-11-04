@@ -1,0 +1,17 @@
+.backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: #192429ad; }
+.dialog { width: min(100%, 540px); max-height: calc(100vh - 40px); overflow: auto; padding: 28px; background: #fffdf9; border: 1px solid #dfe2df; box-shadow: 0 24px 70px #15212740; color: #26343a; }
+.eyebrow { color: #a64f3c; font-size: 11px; font-weight: 800; letter-spacing: .15em; }
+.dialog h2 { font: 400 29px/1.15 Georgia,serif; margin: 10px 0; }
+.dialog p { margin: 0 0 18px; color: #586566; line-height: 1.5; font-size: 14px; }
+.choices { display: grid; gap: 10px; margin: 20px 0; }
+.choices button { display: grid; gap: 5px; width: 100%; padding: 15px 16px; text-align: left; color: #26343a; background: #f9f7f3; border: 1px solid #d9dfdc; cursor: pointer; }
+.choices button:hover,.choices button:focus-visible { border-color: #a64f3c; outline-color: #a64f3c; }
+.choices button strong { font-size: 14px; }
+.choices button span { font-size: 12px; line-height: 1.5; color: #65716f; }
+.choices button:disabled,.close:disabled { opacity: .55; cursor: wait; }
+.dialog .note { padding: 10px 13px; background: #f2f5f1; border: 1px solid #d9e4da; font-size: 12px; }
+.dialog .error { padding: 10px 13px; background: #fff1ed; color: #923b32; border: 1px solid #f1ccc3; font-size: 12px; }
+.note a { color: #a64f3c; font-weight: 800; }
+.close { padding: 9px 15px; background: #fff; border: 1px solid #b9c2bf; color: #26343a; font-weight: 700; cursor: pointer; }
+@media(max-width:540px){.dialog { padding: 20px; }.dialog h2 { font-size: 25px; }}
+.productField{display:grid;gap:10px;color:#26343a;font-size:14px;font-weight:600}.productField textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #b8c0bd;border-radius:8px;font:inherit;line-height:1.6;resize:vertical}.productField small{font-weight:400;line-height:1.6;color:#687376}.productField textarea:focus-visible{outline:2px solid #bb654f;outline-offset:2px}

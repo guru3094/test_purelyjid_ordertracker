@@ -1,0 +1,23 @@
+# Environment files
+.env.local
+.env
+.env.*
+!.env.example
+
+# Next.js
+.next
+
+# Dependencies
+node_modules
+
+# Google credentials
+service-account.json
+credentials.json
+google-service-account.json
+
+# Google credentials
+credentials/
+
+# Local tooling caches
+supabase/.temp/
+tsconfig.tsbuildinfo
