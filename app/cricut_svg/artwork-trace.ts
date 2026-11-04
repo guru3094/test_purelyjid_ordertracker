@@ -55,26 +55,44 @@ function simplifyContour(points: Point[], tolerance: number): Point[] {
     Math.abs(simplifiedArea/originalArea - 1) <= .05 ? result : points;
 }
 
-// Blend shallow turns locally. Limit the blend to half of each adjacent
-// segment so that neighboring curves cannot overlap along a shared edge.
+// Interpolate the outline knots with a shared tangent on curved runs.
+// At sharp turns, use the direction of each edge independently.
 function contourPath(points: Point[], detailScale: number): string {
   const coordinate = (p: Point) => `${Number(p.x.toFixed(4))} ${Number(p.y.toFixed(4))}`;
-  return points.map((point, i) => {
-    const previous = points[(i + points.length - 1) % points.length];
+  const edges = points.map((point, i) => {
     const next = points[(i + 1) % points.length];
-    const incoming = { x: point.x - previous.x, y: point.y - previous.y };
-    const outgoing = { x: next.x - point.x, y: next.y - point.y };
-    const before = Math.hypot(incoming.x, incoming.y);
-    const after = Math.hypot(outgoing.x, outgoing.y);
-    const command = i === 0 ? "M" : "L";
-    const alignment = (incoming.x * outgoing.x + incoming.y * outgoing.y) / (before * after);
-    if (alignment <= Math.cos(Math.PI / 6)) return command + coordinate(point);
-
-    const trim = Math.min(before / 2, after / 2, 3 * detailScale);
-    const start = { x: point.x - incoming.x * trim / before, y: point.y - incoming.y * trim / before };
-    const end = { x: point.x + outgoing.x * trim / after, y: point.y + outgoing.y * trim / after };
-    return `${command}${coordinate(start)}Q${coordinate(point)} ${coordinate(end)}`;
-  }).join("") + "Z";
+    const x = next.x - point.x;
+    const y = next.y - point.y;
+    const length = Math.hypot(x, y);
+    return { x: x / length, y: y / length, length };
+  });
+  const tangents = edges.map((outgoing, i) => {
+    const incoming = edges[(i + edges.length - 1) % edges.length];
+    const alignment = incoming.x * outgoing.x + incoming.y * outgoing.y;
+    if (alignment <= Math.cos(Math.PI / 3)) return null;
+    const x = incoming.x + outgoing.x;
+    const y = incoming.y + outgoing.y;
+    const length = Math.hypot(x, y);
+    return { x: x / length, y: y / length };
+  });
+  const segments = edges.map((edge, i) => {
+    const next = (i + 1) % points.length;
+    const start = points[i];
+    const end = points[next];
+    const outgoing = tangents[i] ?? edge;
+    const incoming = tangents[next] ?? edge;
+    const offset = (direction: Point) => Math.abs(edge.x * direction.y - edge.y * direction.x);
+    const departure = offset(outgoing);
+    const arrival = offset(incoming);
+    if (departure < 1e-8 && arrival < 1e-8) return `L${coordinate(end)}`;
+    // Keep the Bézier controls within a subpixel band around the traced edge.
+    const first = Math.min(edge.length / 3, .65 * detailScale / departure);
+    const last = Math.min(edge.length / 3, .65 * detailScale / arrival);
+    const control1 = { x: start.x + outgoing.x * first, y: start.y + outgoing.y * first };
+    const control2 = { x: end.x - incoming.x * last, y: end.y - incoming.y * last };
+    return `C${coordinate(control1)} ${coordinate(control2)} ${coordinate(end)}`;
+  });
+  return `M${coordinate(points[0])}${segments.join("")}Z`;
 }
 
 // Preserve the original geometry of a self-contained, filled compound path.
