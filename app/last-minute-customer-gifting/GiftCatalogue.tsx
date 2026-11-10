@@ -2,12 +2,15 @@
 
 import { useRef, useState } from "react";
 import { products, unitPrice } from "./products";
+import type { KeychainShape, KeychainFinish } from "./MockupScene";
 import GiftMockup, { type GiftMockupHandle } from "./GiftMockup";
 
 const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 const categories = ["All gifts", "Keychains", "Drinkware", "Photo gifts", "Cards"];
 
 export default function GiftCatalogue() {
+  const [keychainShape,setKeychainShape]=useState<KeychainShape>("circle");
+  const [keychainFinish,setKeychainFinish]=useState<KeychainFinish>("silver");
   const mockup=useRef<GiftMockupHandle>(null);
   const [sharing,setSharing]=useState(false);
   const [shareNote,setShareNote]=useState("");
@@ -22,7 +25,7 @@ export default function GiftCatalogue() {
   const quantity = Number(quantities[product.id] ?? product.tiers[0].min);
   const valid = Number.isSafeInteger(quantity) && quantity >= product.tiers[0].min;
   const price = valid ? unitPrice(product.tiers, quantity) : null;
-  const message = ["Hi PurelyJid! I would like to enquire about Last Minute Customer Gifting.", `Product: ${product.name} (${product.detail})`, variant && `Variant / size: ${variant}`, `Quantity: ${quantity}`, `Price per piece: ${money(price ?? 0)}`, `Product total: ${money((price ?? 0) * quantity)}`, personalisation && `Personalisation: ${personalisation}`, requiredDate && `Required date: ${requiredDate}`, `Fulfilment: ${fulfilment}`].filter(Boolean).join("\n");
+  const message = ["Hi PurelyJid! I would like to enquire about Last Minute Customer Gifting.", `Product: ${product.name} (${product.detail})`, product.id==="metal-keychain" && `Keychain: ${keychainShape}, ${keychainFinish}`, variant && `Variant / size: ${variant}`, `Quantity: ${quantity}`, `Price per piece: ${money(price ?? 0)}`, `Product total: ${money((price ?? 0) * quantity)}`, personalisation && `Personalisation: ${personalisation}`, requiredDate && `Required date: ${requiredDate}`, `Fulfilment: ${fulfilment}`].filter(Boolean).join("\n");
 
   async function shareEnquiry(downloadOnly=false){
     setSharing(true);setShareNote("");
@@ -57,7 +60,7 @@ export default function GiftCatalogue() {
     })}</div>
     <section id="gift-enquiry" className="gift-enquiry">
       <div><p className="vinyl-eyebrow">MAKE IT YOURS</p><h2>A personal touch,<br />a memorable gift.</h2><p>Add your requirements and share your selection with PurelyJid on WhatsApp.</p></div>
-      <div><GiftMockup ref={mockup} productId={product.id} name={product.name} detail={product.detail} /><form onSubmit={event => {event.preventDefault(); if(valid) window.open(`https://wa.me/919518770073?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");}}>
+      <div><GiftMockup ref={mockup} productId={product.id} name={product.name} detail={product.detail} keychainShape={keychainShape} keychainFinish={keychainFinish} onKeychainShapeChange={setKeychainShape} onKeychainFinishChange={setKeychainFinish} /><form onSubmit={event => {event.preventDefault(); if(valid) window.open(`https://wa.me/919518770073?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");}}>
         <label>Selected gift<select value={selected} onChange={event => {setSelected(event.target.value); setVariant("");}}>{products.map(item => <option key={item.id} value={item.id}>{item.name} — {item.detail}</option>)}</select></label>
         <div className="gift-form-row"><label>Quantity<input type="number" required min={product.tiers[0].min} step="1" value={quantities[product.id] ?? product.tiers[0].min} onChange={event => setQuantities({...quantities, [product.id]: event.target.value})} /></label><label>Required date<input type="date" value={requiredDate} onChange={event => setRequiredDate(event.target.value)} /></label></div>
         <label>Variant / size (optional)<input value={variant} onChange={event => setVariant(event.target.value)} placeholder="e.g. heart frame or 600 ml bottle" /></label>

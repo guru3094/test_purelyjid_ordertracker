@@ -4,11 +4,13 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-export type ArtworkSettings = { url: string | null; scale: number; x: number; y: number };
-type Props = { productId: string; rotation: number; front: ArtworkSettings; back: ArtworkSettings; samePhoto: boolean; captureRef: MutableRefObject<null | (() => Promise<File>)> };
+export type ArtworkSettings = { url: string | null; scale: number; x: number; y: number; fit?: "contain" | "cover" };
+export type KeychainShape = "circle" | "rectangle" | "diamond" | "hexagon" | "heart" | "oval";
+export type KeychainFinish = "silver" | "gold";
+type Props = { keychainShape: KeychainShape; keychainFinish: KeychainFinish; productId: string; rotation: number; front: ArtworkSettings; back: ArtworkSettings; samePhoto: boolean; captureRef: MutableRefObject<null | (() => Promise<File>)> };
 
-function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady: () => void) {
-  const canvas = document.createElement("canvas"); canvas.width = cylindrical ? 2048 : 1024; canvas.height = 1024;
+function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady: () => void, mug = false, flatShape: KeychainShape = "circle") {
+  const canvas = document.createElement("canvas"); canvas.width = cylindrical ? 2048 : flatShape === "rectangle" ? 655 : flatShape === "oval" ? 686 : 1024; canvas.height = mug ? 750 : 1024;
   const ctx = canvas.getContext("2d")!;
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
@@ -17,7 +19,7 @@ function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady
     image.onload = () => {
       if(texture.userData.cancelled)return;
       // Fit without distortion, then resize and move inside the actual print area.
-      const fit = Math.min(canvas.width * (cylindrical ? .78 : .9) / image.width, canvas.height * .9 / image.height);
+      const fit = (settings.fit === "contain" ? Math.min : Math.max)(canvas.width / image.width, canvas.height / image.height);
       const w = image.width * fit * settings.scale, h = image.height * fit * settings.scale;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, (canvas.width-w)/2 + settings.x*canvas.width/100, (canvas.height-h)/2-settings.y*canvas.height/100, w, h);
@@ -28,7 +30,27 @@ function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady
   return texture;
 }
 
-export default function MockupScene({ productId, rotation, front, back, samePhoto, captureRef }: Props) {
+
+function keychainOutline(kind: KeychainShape) {
+  const shape=new THREE.Shape();
+  if(kind==="circle"||kind==="oval") {shape.absellipse(0,0,kind==="oval"?.59:.75,kind==="oval"?.88:.75,0,Math.PI*2,false,0);return shape;}
+  if(kind==="heart") {
+    shape.moveTo(0,-.8);shape.bezierCurveTo(-.15,-.63,-.87,-.12,-.78,.38);
+    shape.bezierCurveTo(-.72,.88,-.18,.94,0,.52);shape.bezierCurveTo(.18,.94,.72,.88,.78,.38);
+    shape.bezierCurveTo(.87,-.12,.15,-.63,0,-.8);return shape;
+  }
+  if(kind==="hexagon") {
+    for(let i=0;i<6;i++){const a=Math.PI/2+i*Math.PI/3;const x=.84*Math.cos(a),y=.84*Math.sin(a);if(i===0)shape.moveTo(x,y);else shape.lineTo(x,y);}shape.closePath();return shape;
+  }
+  const w=kind==="rectangle"?1.1:1.24,h=kind==="rectangle"?1.72:1.24,r=.1;
+  shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);
+  shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);shape.lineTo(-w/2+r,h/2);
+  shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
+  if(kind==="diamond") {const points=shape.extractPoints(32).shape;const rotated=new THREE.Shape();points.forEach((p,i)=>{const x=(p.x-p.y)/Math.SQRT2,y=(p.x+p.y)/Math.SQRT2;if(i===0)rotated.moveTo(x,y);else rotated.lineTo(x,y);});rotated.closePath();return rotated;}
+  return shape;
+}
+
+export default function MockupScene({ productId, rotation, front, back, samePhoto, captureRef, keychainShape, keychainFinish }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const object = useRef<THREE.Group | null>(null);
   const printMaterial=useRef<THREE.MeshStandardMaterial|null>(null);
@@ -55,7 +77,7 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
     const fill = new THREE.DirectionalLight(0xe7f0ff,2);fill.position.set(3,3,-2);scene.add(fill);
     const group=new THREE.Group();object.current=group;group.rotation.y=angle.current*Math.PI/180;scene.add(group);
     const white=new THREE.MeshStandardMaterial({color:0xfafafa,roughness:.2,metalness:.05});
-    const metal=new THREE.MeshStandardMaterial({color:0xcdd1d3,roughness:.23,metalness:.8});
+    const metal=new THREE.MeshStandardMaterial({color:productId==="metal-keychain"&&keychainFinish==="gold"?0xd6a344:0xcdd1d3,roughness:.23,metalness:.8});
     const black=new THREE.MeshStandardMaterial({color:0x17191b,roughness:.32});
     const wood=new THREE.MeshStandardMaterial({color:0xb78a53,roughness:.75});
     const add=(geometry:THREE.BufferGeometry,material:THREE.Material,x=0,y=0,z=0,parent:THREE.Group|THREE.Scene=group) => {const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
@@ -63,8 +85,8 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
     const mug=productId.includes("mug"), bottle=productId.includes("sipper")||productId==="sports-bottle";
     const resources:THREE.Texture[]=[];
     const render=()=>renderer.render(scene,camera);
-    const frontTexture=artworkTexture(front,cylinder,render);resources.push(frontTexture);
-    const backTexture=artworkTexture(samePhoto?front:back,false,render);resources.push(backTexture);
+    const frontTexture=artworkTexture(front,cylinder,render,mug,productId==="metal-keychain"?keychainShape:"circle");resources.push(frontTexture);
+    const backTexture=artworkTexture(samePhoto?front:back,false,render,false,productId==="metal-keychain"?keychainShape:"circle");resources.push(backTexture);
     const printed=new THREE.MeshStandardMaterial({map:frontTexture,transparent:true,roughness:.3,depthWrite:false,side:THREE.FrontSide});
     printMaterial.current=printed;
     const rearPrinted=new THREE.MeshStandardMaterial({map:backTexture,transparent:true,roughness:.3});rearMaterial.current=rearPrinted;
@@ -90,8 +112,9 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
       }
       const printHeight=mug?h-.17:bottle?h-.32:h-.18;
       // Leave a blank seam near the mug handle, as on a sublimation wrap.
-      const arc=mug?Math.PI*1.7:Math.PI*1.95;
-      const thetaStart=-arc/2;
+      const handleGap=.66; // about 19 degrees each side of the handle centre
+      const arc=mug?Math.PI*2-handleGap:Math.PI*1.95;
+      const thetaStart=mug?Math.PI/2+handleGap/2:-arc/2;
       const surface=add(new THREE.CylinderGeometry(r+.002,r+.002,printHeight,128,1,true,thetaStart,arc),printed,0,base+printHeight/2+.08,0);
       surface.rotation.y=0;
     } else {
@@ -100,11 +123,27 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
       if(productId==="photo-4"){width=1.25;height=1.9;}if(productId==="photo-10"){width=1.5;height=1.9;}if(productId==="photo-24"){width=1.05;height=2.1;}if(productId==="pvc-cards"){width=1.4;height=2.1;}
       const y=1.55;
       if(keychain){
-        const body=add(new THREE.CylinderGeometry(r,r,.09,96),productId==="wooden-keychain"?wood:metal,0,y,0);body.rotation.x=Math.PI/2;
-        const face=add(new THREE.CircleGeometry(r-.07,96),printed,0,y,.047);face.rotation.y=0;
-        if(productId==="metal-keychain") {const rear=add(new THREE.CircleGeometry(r-.07,96),rearPrinted,0,y,-.047);rear.rotation.y=Math.PI;}
-        add(new THREE.TorusGeometry(.12,.025,12,48),metal,0,y+r+.08,0);
-        add(new THREE.TorusGeometry(.27,.025,12,64),metal,0,y+r+.4,0);
+        const selectedShape=productId==="metal-keychain"?keychainShape:"circle";
+        const outline=keychainOutline(selectedShape);
+        const bodyGeometry=new THREE.ExtrudeGeometry(outline,{depth:.075,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.015,bevelThickness:.012,curveSegments:48});
+        add(bodyGeometry,productId==="wooden-keychain"?wood:metal,0,y,-.0375);
+        const insertGeometry=new THREE.ShapeGeometry(outline,48);
+        insertGeometry.computeBoundingBox();const bounds=insertGeometry.boundingBox!;
+        const positions=insertGeometry.getAttribute("position"),uv=insertGeometry.getAttribute("uv");
+        for(let i=0;i<positions.count;i++) uv.setXY(i,(positions.getX(i)-bounds.min.x)/(bounds.max.x-bounds.min.x),(positions.getY(i)-bounds.min.y)/(bounds.max.y-bounds.min.y));
+        const faceBase=add(insertGeometry,white,0,y,.052);faceBase.scale.set(.94,.94,1);
+        const face=add(insertGeometry.clone(),printed,0,y,.054);face.scale.set(.94,.94,1);
+        if(productId==="metal-keychain") {
+          const rearBase=add(insertGeometry.clone(),white,0,y,-.052);rearBase.scale.set(.94,.94,1);rearBase.rotation.y=Math.PI;
+          const rear=add(insertGeometry.clone(),rearPrinted,0,y,-.054);rear.scale.set(.94,.94,1);rear.rotation.y=Math.PI;
+        }
+        const top=bounds.max.y+y;
+        add(new THREE.TorusGeometry(.075,.022,12,40),metal,0,top+.055,0);
+        for(let i=0;i<5;i++){
+          const link=add(new THREE.TorusGeometry(.075,.019,12,32),metal,0,top+.16+i*.105,0);
+          link.scale.y=1.25;link.rotation.y=i%2?Math.PI/2:0;
+        }
+        add(new THREE.TorusGeometry(.25,.023,12,64),metal,0,top+.87,0);
       } else {
         add(new THREE.BoxGeometry(width,height,.075),productId==="led-frame"?white:metal,0,y,0);
         const face=add(new THREE.PlaneGeometry(width-.055,height-.055),printed,0,y,.04);
@@ -127,18 +166,18 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
         ctx.drawImage(renderer.domElement,x+(800-width)/2,y+(750-height)/2,width,height);ctx.fillStyle="#38291e";ctx.font="24px Arial";ctx.textAlign="center";ctx.fillText(["Front","Right","Back","Left"][index],x+400,y+785);
       });group.rotation.y=saved;render();
       const blob=await new Promise<Blob>((resolve,reject)=>collage.toBlob(value=>value?resolve(value):reject(new Error("Mockup export failed")),"image/png"));
-      return new File([blob],`${productId}-four-view-mockup.png`,{type:"image/png"});
+      return new File([blob],`${productId}${productId==="metal-keychain"?`-${keychainFinish}-${keychainShape}`:""}-four-view-mockup.png`,{type:"image/png"});
     };
     const observer=new ResizeObserver(resize);observer.observe(host);resize();
     let frame=0;const animate=()=>{frame=requestAnimationFrame(animate);group.rotation.y=angle.current*Math.PI/180;render();};animate();
     return()=>{captureRef.current=null;cancelAnimationFrame(frame);observer.disconnect();object.current=null;scene.traverse(node=>{if(node instanceof THREE.Mesh){node.geometry.dispose();for(const m of Array.isArray(node.material)?node.material:[node.material])m.dispose();}});resources.forEach(t=>{t.userData.cancelled=true;t.dispose();});environment.dispose();renderer.dispose();renderer.domElement.remove();};
-  },[productId,captureRef]);
+  },[productId,captureRef,keychainShape,keychainFinish]);
   useEffect(()=>{
     const cylinder=["white-mug","magic-mug","sipper-small","sipper-large","sports-bottle","tumbler"].includes(productId);
-    const frontTexture=artworkTexture(front,cylinder,()=>{}),backTexture=artworkTexture(samePhoto?front:back,false,()=>{});
+    const frontTexture=artworkTexture(front,cylinder,()=>{},productId.includes("mug"),productId==="metal-keychain"?keychainShape:"circle"),backTexture=artworkTexture(samePhoto?front:back,false,()=>{},false,productId==="metal-keychain"?keychainShape:"circle");
     if(printMaterial.current){printMaterial.current.map=frontTexture;printMaterial.current.needsUpdate=true;}
     if(rearMaterial.current){rearMaterial.current.map=backTexture;rearMaterial.current.needsUpdate=true;}
     return()=>{for(const texture of [frontTexture,backTexture]){texture.userData.cancelled=true;texture.dispose();}};
-  },[productId,front,back,samePhoto]);
+  },[productId,front,back,samePhoto,keychainShape,keychainFinish]);
   return <div className="gift-webgl" ref={mount} role="img" aria-label="Interactive 3D product with your selected artwork" />;
 }
