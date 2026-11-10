@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { products, unitPrice } from "./products";
-import GiftMockup from "./GiftMockup";
+import GiftMockup, { type GiftMockupHandle } from "./GiftMockup";
 
 const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 const categories = ["All gifts", "Keychains", "Drinkware", "Photo gifts", "Cards"];
 
 export default function GiftCatalogue() {
+  const mockup=useRef<GiftMockupHandle>(null);
+  const [sharing,setSharing]=useState(false);
+  const [shareNote,setShareNote]=useState("");
   const [category, setCategory] = useState("All gifts");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<string>(products[0].id);
@@ -21,6 +24,20 @@ export default function GiftCatalogue() {
   const price = valid ? unitPrice(product.tiers, quantity) : null;
   const message = ["Hi PurelyJid! I would like to enquire about Last Minute Customer Gifting.", `Product: ${product.name} (${product.detail})`, variant && `Variant / size: ${variant}`, `Quantity: ${quantity}`, `Price per piece: ${money(price ?? 0)}`, `Product total: ${money((price ?? 0) * quantity)}`, personalisation && `Personalisation: ${personalisation}`, requiredDate && `Required date: ${requiredDate}`, `Fulfilment: ${fulfilment}`].filter(Boolean).join("\n");
 
+  async function shareEnquiry(downloadOnly=false){
+    setSharing(true);setShareNote("");
+    try{
+      const files=await mockup.current?.getFiles()??[];
+      if(!downloadOnly&&files.length&&navigator.canShare?.({files})){
+        await navigator.share({files,text:message,title:"PurelyJid gifting enquiry"});
+        setShareNote("Choose the PurelyJid WhatsApp chat (+91 95187 70073) in the share sheet.");
+      }else if(files.length){
+        for(const file of files){const url=URL.createObjectURL(file);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+        setShareNote("Images downloaded. Open WhatsApp using the button below and attach the original photos and four-view mockup from Downloads.");
+      }else setShareNote("Upload your artwork first to include photos and a mockup. You can also send a text enquiry below.");
+    }catch(error){if(!(error instanceof Error&&error.name==="AbortError"))setShareNote("File sharing was unavailable. Use Download enquiry images, then attach them in WhatsApp.");}
+    finally{setSharing(false);}
+  }
   return <section id="gift-catalogue" className="vinyl-container gift-catalogue">
     <div className="gift-section-heading"><div><p className="vinyl-eyebrow">THE GIFT EDIT</p><h2>Pick a little happiness.</h2></div><p>All prices below are per piece.<br />Your quantity unlocks the applicable price.</p></div>
     <div className="gift-filters" aria-label="Filter gifts">{categories.map(item => <button type="button" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</div>
@@ -40,7 +57,7 @@ export default function GiftCatalogue() {
     })}</div>
     <section id="gift-enquiry" className="gift-enquiry">
       <div><p className="vinyl-eyebrow">MAKE IT YOURS</p><h2>A personal touch,<br />a memorable gift.</h2><p>Add your requirements and share your selection with PurelyJid on WhatsApp.</p></div>
-      <div><GiftMockup productId={product.id} name={product.name} detail={product.detail} /><form onSubmit={event => {event.preventDefault(); if(valid) window.open(`https://wa.me/919518770073?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");}}>
+      <div><GiftMockup ref={mockup} productId={product.id} name={product.name} detail={product.detail} /><form onSubmit={event => {event.preventDefault(); if(valid) window.open(`https://wa.me/919518770073?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");}}>
         <label>Selected gift<select value={selected} onChange={event => {setSelected(event.target.value); setVariant("");}}>{products.map(item => <option key={item.id} value={item.id}>{item.name} — {item.detail}</option>)}</select></label>
         <div className="gift-form-row"><label>Quantity<input type="number" required min={product.tiers[0].min} step="1" value={quantities[product.id] ?? product.tiers[0].min} onChange={event => setQuantities({...quantities, [product.id]: event.target.value})} /></label><label>Required date<input type="date" value={requiredDate} onChange={event => setRequiredDate(event.target.value)} /></label></div>
         <label>Variant / size (optional)<input value={variant} onChange={event => setVariant(event.target.value)} placeholder="e.g. heart frame or 600 ml bottle" /></label>
@@ -48,7 +65,10 @@ export default function GiftCatalogue() {
         <label>Fulfilment<select value={fulfilment} onChange={event => setFulfilment(event.target.value)}><option>Pickup</option><option>Delivery</option></select></label>
         {fulfilment === "Delivery" && <p className="gift-delivery-note">Delivery charges will be applicable based on weight and distance and PurelyJid team will inform the charges prior to dispatch.</p>}
         <div className="gift-summary" aria-live="polite"><span>{valid ? `${quantity} pieces × ${money(price ?? 0)}` : `Minimum ${product.tiers[0].min} pieces`}</span><strong>{price !== null ? money(price * quantity) : "—"}</strong></div>
-        <button className="gift-whatsapp" disabled={!valid} type="submit">Enquire on WhatsApp ↗</button>
+        <button className="gift-whatsapp" type="button" disabled={!valid||sharing} onClick={()=>shareEnquiry()}>{sharing?"Preparing images…":"Share enquiry with images"}</button>
+        <button className="gift-download" type="button" disabled={sharing} onClick={()=>shareEnquiry(true)}>Download enquiry images</button>
+        {shareNote&&<p role="status" className="gift-delivery-note">{shareNote}</p>}
+        <button className="gift-whatsapp" disabled={!valid} type="submit">Open WhatsApp text enquiry ↗</button>
       </form></div>
     </section>
   </section>;
