@@ -46,9 +46,8 @@ export default function GiftCatalogue() {
         const body=await prepared.json();
         if(!prepared.ok||!Array.isArray(body.uploads)||body.uploads.length!==files.length)throw new Error(body.error??"Could not prepare image links.");
         for(let i=0;i<files.length;i++){
-          const form=new FormData();form.append("cacheControl","3600");form.append("",files[i]);
-          const upload=await fetch(body.uploads[i].uploadUrl,{method:"PUT",body:form,headers:{"x-upsert":"false"}});
-          if(!upload.ok)throw new Error("Image upload failed. Please try submitting again.");
+          const {upload}=await import("@vercel/blob/client");
+          await upload(body.uploads[i].path,files[i],{access:"private",handleUploadUrl:"/api/gifting-artwork",contentType:files[i].type});
           const label=files[i].name.includes("four-view-mockup")?"Four-view mockup":files[i].name.startsWith("back-")?"Back photo":"Original / front photo";
           attachments.push(`${item.name} — ${label}: ${body.uploads[i].url}`);
         }
