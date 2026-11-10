@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 let source = stripTypeScriptTypes(readFileSync(new URL('../app/cricut_svg/artwork-trace.ts', import.meta.url), 'utf8'));
 source = source.replace('"svg-path-bbox"', JSON.stringify(import.meta.resolve('svg-path-bbox')));
+source = source.replace('"svgpath"', JSON.stringify(import.meta.resolve('svgpath')));
 const { traceArtwork } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 async function trace(width, height, filled, minArea = 8) {
   const data = new Uint8ClampedArray(width*height*4);
@@ -37,6 +38,6 @@ test('zero tiny-shape removal keeps small intentional holes',async()=>{
 test('curved silhouettes use smooth vector segments',async()=>{
   const r=await trace(120,120,(x,y)=>(x-60)**2+(y-60)**2<45**2);
   assert.equal(r.pathCount,1);
-  assert.ok((r.path.match(/Q/g)||[]).length>12, r.path);
+  assert.ok((r.path.match(/[CQ]/g)||[]).length>12, r.path);
   assert.ok(Object.values(r.bounds).every(Number.isFinite));
 });

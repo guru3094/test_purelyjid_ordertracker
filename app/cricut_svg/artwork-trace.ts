@@ -106,6 +106,8 @@ async function readVectorOutline(file: Blob): Promise<ArtworkOutline> {
   const fillRule = element?.getAttribute("fill-rule") ?? root.getAttribute("fill-rule") ?? "nonzero";
   const fill = element?.getAttribute("fill") ?? root.getAttribute("fill") ?? "black";
   const contours = path.split(/(?=[Mm])/);
+  // svgpath exposes parse errors at runtime but omits err from its bundled types.
+  const parsedPath = svgpath(path) as ReturnType<typeof svgpath> & { err: string };
   if (document.doctype || root.localName !== "svg" || root.namespaceURI !== "http://www.w3.org/2000/svg" ||
       root.children.length !== 1 || element?.localName !== "path" ||
       element.namespaceURI !== root.namespaceURI || element.children.length ||
@@ -114,7 +116,7 @@ async function readVectorOutline(file: Blob): Promise<ArtworkOutline> {
       !/^(?:#[\da-f]{3}|#[\da-f]{6}|[a-z]+)$/i.test(fill) || /^(?:none|transparent)$/i.test(fill) ||
       (fillRule !== "evenodd" && fillRule !== "nonzero") ||
       !/^[Mm][MmLlHhVvCcSsQqTtAaZz\d.eE+\s,-]*$/.test(path) ||
-      contours.some(contour => !/[Zz]$/.test(contour.trim())) || svgpath(path).err) {
+      contours.some(contour => !/[Zz]$/.test(contour.trim())) || parsedPath.err) {
     throw new Error("Upload an SVG with one closed, filled path or compound path and no transforms or effects.");
   }
   const [x1, y1, x2, y2] = svgPathBbox(path);
