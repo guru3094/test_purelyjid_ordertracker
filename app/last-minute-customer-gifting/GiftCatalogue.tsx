@@ -64,7 +64,7 @@ export default function GiftCatalogue() {
       const amount = Number(quantities[item.id] ?? item.tiers[0].min);
       const ok = Number.isSafeInteger(amount) && amount >= item.tiers[0].min;
       const each = ok ? unitPrice(item.tiers, amount) : null;
-      return <article className="gift-card" key={item.id}>
+      return <article className="gift-card" id={item.id} key={item.id}>
         <div className="gift-card-top"><span>{item.category}</span><span aria-hidden="true">✦</span></div>
         <h3>{item.name}</h3><p className="gift-detail">{item.detail}</p>
         <div className="gift-from">From <strong>{money(item.tiers[item.tiers.length - 1].price)}</strong> / piece <small>at {item.tiers[item.tiers.length - 1].min}+ pieces</small></div>
