@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, type MutableRefObject } from "react";
+import { artworkPlacement } from "./artworkPlacement";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-export type ArtworkSettings = { url: string | null; scale: number; x: number; y: number; fit?: "contain" | "cover" };
+export type ArtworkSettings = { url: string | null; scale: number; x: number; y: number; fit?: "contain" | "cover"; imageRotation?: number; naturalLandscape?: boolean };
 export type KeychainShape = "circle" | "rectangle" | "diamond" | "hexagon" | "heart" | "oval";
 export type KeychainFinish = "silver" | "gold";
 type Props = { keychainShape: KeychainShape; keychainFinish: KeychainFinish; productId: string; rotation: number; front: ArtworkSettings; back: ArtworkSettings; samePhoto: boolean; captureRef: MutableRefObject<null | (() => Promise<File>)> };
@@ -19,10 +20,10 @@ function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady
     image.onload = () => {
       if(texture.userData.cancelled)return;
       // Fit without distortion, then resize and move inside the actual print area.
-      const fit = (settings.fit === "contain" ? Math.min : Math.max)(canvas.width / image.width, canvas.height / image.height);
-      const w = image.width * fit * settings.scale, h = image.height * fit * settings.scale;
+      const placement=artworkPlacement(image.width,image.height,canvas.width,canvas.height,settings.imageRotation??0,settings.fit??"cover",settings.scale,settings.x,settings.y);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, (canvas.width-w)/2 + settings.x*canvas.width/100, (canvas.height-h)/2-settings.y*canvas.height/100, w, h);
+      ctx.save();ctx.translate(placement.centreX,placement.centreY);ctx.rotate(placement.radians);
+      ctx.drawImage(image,-placement.width/2,-placement.height/2,placement.width,placement.height);ctx.restore();
       texture.needsUpdate = true; onReady();
     };
     image.src = settings.url;
@@ -68,7 +69,7 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
     renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.35;
     host.appendChild(renderer.domElement);
-    const scene = new THREE.Scene();scene.background=new THREE.Color("#e6e3df");
+    const scene = new THREE.Scene();scene.background=new THREE.Color("#08090b");
     const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
     const environment=pmrem.fromScene(room,.04);scene.environment=environment.texture;room.dispose();pmrem.dispose();
     const camera = new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(0,2.6,7.4);camera.lookAt(0,1.35,0);
@@ -151,19 +152,19 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
         if(productId==="led-frame") add(new THREE.BoxGeometry(width+.12,.1,.3),white,0,y-height/2-.06,0);
       }
     }
-    const pedestal=add(new THREE.CylinderGeometry(1.65,1.7,.2,128),new THREE.MeshStandardMaterial({color:0xf4f2ef,roughness:.65}),0,.22,0,scene);pedestal.receiveShadow=true;
-    const floor=add(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0xe6e3df,roughness:1}),0,.1,0,scene);floor.rotation.x=-Math.PI/2;
+    const pedestal=add(new THREE.CylinderGeometry(1.65,1.7,.2,128),new THREE.MeshStandardMaterial({color:0x17191d,roughness:.72}),0,.22,0,scene);pedestal.receiveShadow=true;
+    const floor=add(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x090a0c,roughness:.95}),0,.1,0,scene);floor.rotation.x=-Math.PI/2;
     const resize=()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();render();};
     captureRef.current=async()=>{
       const collage=document.createElement("canvas");collage.width=1600;collage.height=1600;
-      const ctx=collage.getContext("2d")!;ctx.fillStyle="#f6f2eb";ctx.fillRect(0,0,1600,1600);
+      const ctx=collage.getContext("2d")!;ctx.fillStyle="#08090b";ctx.fillRect(0,0,1600,1600);
       const saved=group.rotation.y;
       [0,90,180,270].forEach((degrees,index)=>{
         group.rotation.y=degrees*Math.PI/180;render();
         const x=(index%2)*800,y=Math.floor(index/2)*800;
         const fit=Math.min(800/renderer.domElement.width,750/renderer.domElement.height);
         const width=renderer.domElement.width*fit,height=renderer.domElement.height*fit;
-        ctx.drawImage(renderer.domElement,x+(800-width)/2,y+(750-height)/2,width,height);ctx.fillStyle="#38291e";ctx.font="24px Arial";ctx.textAlign="center";ctx.fillText(["Front","Right","Back","Left"][index],x+400,y+785);
+        ctx.drawImage(renderer.domElement,x+(800-width)/2,y+(750-height)/2,width,height);ctx.fillStyle="#f5f5f5";ctx.font="24px Arial";ctx.textAlign="center";ctx.fillText(["Front","Right","Back","Left"][index],x+400,y+785);
       });group.rotation.y=saved;render();
       const blob=await new Promise<Blob>((resolve,reject)=>collage.toBlob(value=>value?resolve(value):reject(new Error("Mockup export failed")),"image/png"));
       return new File([blob],`${productId}${productId==="metal-keychain"?`-${keychainFinish}-${keychainShape}`:""}-four-view-mockup.png`,{type:"image/png"});

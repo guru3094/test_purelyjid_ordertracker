@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ArtworkSettings, KeychainShape, KeychainFinish } from "./MockupScene";
 const MockupScene=dynamic(()=>import("./MockupScene"),{ssr:false,loading:()=> <p>Loading 3D preview…</p>});
-const initial:ArtworkSettings={url:null,scale:1,x:0,y:0,fit:"cover"};
+const initial:ArtworkSettings={url:null,scale:1,x:0,y:0,fit:"cover",imageRotation:0,naturalLandscape:false};
 export type GiftMockupHandle={ getFiles:()=>Promise<File[]> };
 type Props={productId:string;name:string;detail:string;keychainShape:KeychainShape;keychainFinish:KeychainFinish;onKeychainShapeChange:(shape:KeychainShape)=>void;onKeychainFinishChange:(finish:KeychainFinish)=>void};
 
@@ -39,7 +39,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
       const file=event.target.files?.[0];if(!file)return;
       if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>10*1024*1024){setError("Choose a PNG, JPG or WebP image up to 10 MB.");return;}
       const url=URL.createObjectURL(file),image=new Image();
-      image.onload=()=>{urls.current.push(url);const target=side==="back"&&doubleSided&&!samePhoto?"back":"front";originals.current[target]=file;update({url,scale:1,x:0,y:0});setError("");};
+      image.onload=()=>{urls.current.push(url);const target=side==="back"&&doubleSided&&!samePhoto?"back":"front";originals.current[target]=file;update({url,scale:1,x:0,y:0,imageRotation:0,naturalLandscape:image.naturalWidth>image.naturalHeight});setError("");};
       image.onerror=()=>{URL.revokeObjectURL(url);setError("This image could not be opened.");};image.src=url;
     }}/></label>
     {error&&<p role="alert" className="gift-validation">{error}</p>}
@@ -49,6 +49,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     <p className="gift-mockup-caption">{name} · {detail}</p>
     <label className="gift-mockup-control">Rotate product <span>{Math.round(rotation)}°</span><input type="range" min="0" max="360" value={rotation} onChange={event=>setRotation(Number(event.target.value))}/></label>
     <div className="gift-mockup-actions"><button type="button" aria-pressed={active.fit!=="contain"} onClick={()=>update({fit:"cover",scale:1,x:0,y:0})}>Fill print area</button><button type="button" aria-pressed={active.fit==="contain"} onClick={()=>update({fit:"contain",scale:1,x:0,y:0})}>Fit entire photo</button></div>
+    <div className="gift-mockup-actions" role="group" aria-label="Photo orientation"><button type="button" aria-pressed={Boolean(active.naturalLandscape) === (Math.abs((active.imageRotation??0)%180)===90)} onClick={()=>update({imageRotation:active.naturalLandscape?90:0})}>Portrait</button><button type="button" aria-pressed={Boolean(active.naturalLandscape) !== (Math.abs((active.imageRotation??0)%180)===90)} onClick={()=>update({imageRotation:active.naturalLandscape?0:90})}>Landscape</button><button type="button" onClick={()=>update({imageRotation:((active.imageRotation??0)+90)%360})}>Rotate 90°</button></div>
     <label className="gift-mockup-control">Image size <span>{active.scale.toFixed(1)}×</span><input type="range" min="0.1" max="4" step="0.05" value={active.scale} onChange={event=>update({scale:Number(event.target.value)})}/></label>
     <label className="gift-mockup-control">Move left / right <span>{active.x}%</span><input type="range" min="-80" max="80" value={active.x} onChange={event=>update({x:Number(event.target.value)})}/></label>
     <label className="gift-mockup-control">Move down / up <span>{active.y}%</span><input type="range" min="-80" max="80" value={active.y} onChange={event=>update({y:Number(event.target.value)})}/></label>
