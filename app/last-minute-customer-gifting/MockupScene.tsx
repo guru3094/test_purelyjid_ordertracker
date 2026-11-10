@@ -137,13 +137,13 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
           const rearBase=add(insertGeometry.clone(),white,0,y,-.052);rearBase.scale.set(.94,.94,1);rearBase.rotation.y=Math.PI;
           const rear=add(insertGeometry.clone(),rearPrinted,0,y,-.054);rear.scale.set(.94,.94,1);rear.rotation.y=Math.PI;
         }
-        const top=bounds.max.y+y;
-        add(new THREE.TorusGeometry(.075,.022,12,40),metal,0,top+.055,0);
+        const top=bounds.max.y+y,attachmentX=selectedShape==="heart"?-.4:0;
+        add(new THREE.TorusGeometry(.075,.022,12,40),metal,attachmentX,top+.055,0);
         for(let i=0;i<5;i++){
-          const link=add(new THREE.TorusGeometry(.075,.019,12,32),metal,0,top+.16+i*.105,0);
+          const link=add(new THREE.TorusGeometry(.075,.019,12,32),metal,attachmentX,top+.16+i*.105,0);
           link.scale.y=1.25;link.rotation.y=i%2?Math.PI/2:0;
         }
-        add(new THREE.TorusGeometry(.25,.023,12,64),metal,0,top+.87,0);
+        add(new THREE.TorusGeometry(.25,.023,12,64),metal,attachmentX,top+.87,0);
       } else {
         add(new THREE.BoxGeometry(width,height,.075),productId==="led-frame"?white:metal,0,y,0);
         const face=add(new THREE.PlaneGeometry(width-.055,height-.055),printed,0,y,.04);
