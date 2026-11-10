@@ -8,26 +8,29 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 export type ArtworkSettings = { url: string | null; scale: number; x: number; y: number; fit?: "contain" | "cover"; imageRotation?: number; naturalLandscape?: boolean };
 export type KeychainShape = "circle" | "rectangle" | "diamond" | "hexagon" | "heart" | "oval";
 export type KeychainFinish = "silver" | "gold";
-type Props = { keychainShape: KeychainShape; keychainFinish: KeychainFinish; productId: string; rotation: number; front: ArtworkSettings; back: ArtworkSettings; samePhoto: boolean; captureRef: MutableRefObject<null | (() => Promise<File>)> };
+type Props = { isActive?:boolean; keychainShape: KeychainShape; keychainFinish: KeychainFinish; productId: string; rotation: number; front: ArtworkSettings; back: ArtworkSettings; samePhoto: boolean; captureRef: MutableRefObject<null | (() => Promise<File>)> };
 
 function artworkTexture(settings: ArtworkSettings, cylindrical: boolean, onReady: () => void, mug = false, flatShape: KeychainShape = "circle") {
   const canvas = document.createElement("canvas"); canvas.width = cylindrical ? 2048 : flatShape === "rectangle" ? 655 : flatShape === "oval" ? 686 : 1024; canvas.height = mug ? 750 : 1024;
   const ctx = canvas.getContext("2d")!;
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
+  let ready:()=>void=()=>{};texture.userData.ready=new Promise<void>(resolve=>{ready=resolve;});
   if (settings.url) {
     const image = new Image();
     image.onload = () => {
-      if(texture.userData.cancelled)return;
+      if(texture.userData.cancelled){ready();return;}
       // Fit without distortion, then resize and move inside the actual print area.
       const placement=artworkPlacement(image.width,image.height,canvas.width,canvas.height,settings.imageRotation??0,settings.fit??"cover",settings.scale,settings.x,settings.y);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();ctx.translate(placement.centreX,placement.centreY);ctx.rotate(placement.radians);
       ctx.drawImage(image,-placement.width/2,-placement.height/2,placement.width,placement.height);ctx.restore();
-      texture.needsUpdate = true; onReady();
+      texture.needsUpdate = true; onReady();ready();
     };
+    image.onerror=()=>ready();
     image.src = settings.url;
   }
+  if(!settings.url)ready();
   return texture;
 }
 
@@ -51,11 +54,12 @@ function keychainOutline(kind: KeychainShape) {
   return shape;
 }
 
-export default function MockupScene({ productId, rotation, front, back, samePhoto, captureRef, keychainShape, keychainFinish }: Props) {
+export default function MockupScene({ productId, rotation, front, back, samePhoto, captureRef, keychainShape, keychainFinish, isActive=true }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const object = useRef<THREE.Group | null>(null);
   const printMaterial=useRef<THREE.MeshStandardMaterial|null>(null);
   const rearMaterial=useRef<THREE.MeshStandardMaterial|null>(null);
+  const activeRef=useRef(isActive);activeRef.current=isActive;
   const angle = useRef(rotation);
   angle.current = rotation;
   useEffect(() => { if(object.current) object.current.rotation.y = rotation*Math.PI/180; }, [rotation]);
@@ -156,6 +160,7 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
     const floor=add(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x090a0c,roughness:.95}),0,.1,0,scene);floor.rotation.x=-Math.PI/2;
     const resize=()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();render();};
     captureRef.current=async()=>{
+      await Promise.all([printed.map?.userData.ready,rearPrinted.map?.userData.ready]);
       const collage=document.createElement("canvas");collage.width=1600;collage.height=1600;
       const ctx=collage.getContext("2d")!;ctx.fillStyle="#08090b";ctx.fillRect(0,0,1600,1600);
       const saved=group.rotation.y;
@@ -170,7 +175,7 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
       return new File([blob],`${productId}${productId==="metal-keychain"?`-${keychainFinish}-${keychainShape}`:""}-four-view-mockup.png`,{type:"image/png"});
     };
     const observer=new ResizeObserver(resize);observer.observe(host);resize();
-    let frame=0;const animate=()=>{frame=requestAnimationFrame(animate);group.rotation.y=angle.current*Math.PI/180;render();};animate();
+    let frame=0;const animate=()=>{frame=requestAnimationFrame(animate);group.rotation.y=angle.current*Math.PI/180;if(activeRef.current)render();};animate();
     return()=>{captureRef.current=null;cancelAnimationFrame(frame);observer.disconnect();object.current=null;scene.traverse(node=>{if(node instanceof THREE.Mesh){node.geometry.dispose();for(const m of Array.isArray(node.material)?node.material:[node.material])m.dispose();}});resources.forEach(t=>{t.userData.cancelled=true;t.dispose();});environment.dispose();renderer.dispose();renderer.domElement.remove();};
   },[productId,captureRef,keychainShape,keychainFinish]);
   useEffect(()=>{

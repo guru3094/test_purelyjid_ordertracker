@@ -6,9 +6,9 @@ import type { ArtworkSettings, KeychainShape, KeychainFinish } from "./MockupSce
 const MockupScene=dynamic(()=>import("./MockupScene"),{ssr:false,loading:()=> <p>Loading 3D preview…</p>});
 const initial:ArtworkSettings={url:null,scale:1,x:0,y:0,fit:"cover",imageRotation:0,naturalLandscape:false};
 export type GiftMockupHandle={ getFiles:()=>Promise<File[]> };
-type Props={productId:string;name:string;detail:string;keychainShape:KeychainShape;keychainFinish:KeychainFinish;onKeychainShapeChange:(shape:KeychainShape)=>void;onKeychainFinishChange:(finish:KeychainFinish)=>void};
+type Props={isActive?:boolean;productId:string;name:string;detail:string;keychainShape:KeychainShape;keychainFinish:KeychainFinish;onKeychainShapeChange:(shape:KeychainShape)=>void;onKeychainFinishChange:(finish:KeychainFinish)=>void};
 
-const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({productId,name,detail,keychainShape,keychainFinish,onKeychainShapeChange,onKeychainFinishChange},ref){
+const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({productId,name,detail,keychainShape,keychainFinish,onKeychainShapeChange,onKeychainFinishChange,isActive=true},ref){
   const [front,setFront]=useState<ArtworkSettings>(initial);
   const [back,setBack]=useState<ArtworkSettings>(initial);
   const [samePhoto,setSamePhoto]=useState(true);
@@ -30,8 +30,8 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     if((front.url||(doubleSided&&!samePhoto&&back.url))&&capture.current)files.push(await capture.current());
     return files;
   }}),[doubleSided,samePhoto,front,back]);
-  return <section className="gift-mockup" aria-labelledby="mockup-title">
-    <div className="gift-mockup-heading"><div><p className="vinyl-eyebrow">PREVIEW YOUR PERSONALISATION</p><h3 id="mockup-title">Your photo. Your gift.</h3></div><span>360° product preview</span></div>
+  return <section className="gift-mockup" aria-labelledby={`mockup-title-${productId}`}>
+    <div className="gift-mockup-heading"><div><p className="vinyl-eyebrow">PREVIEW YOUR PERSONALISATION</p><h3 id={`mockup-title-${productId}`}>Your photo. Your gift.</h3></div><span>360° product preview</span></div>
     <p className="gift-mockup-copy">Drag to rotate the object. Resize and position your photo within the print area.</p>
     {doubleSided&&<div className="gift-form-row"><label>Keychain shape<select value={keychainShape} onChange={event=>onKeychainShapeChange(event.target.value as KeychainShape)}><option value="circle">Circle</option><option value="rectangle">Rectangle</option><option value="diamond">Rounded diamond</option><option value="hexagon">Hexagon</option><option value="heart">Heart</option><option value="oval">Oval</option></select></label><label>Metal finish<select value={keychainFinish} onChange={event=>onKeychainFinishChange(event.target.value as KeychainFinish)}><option value="silver">Silver</option><option value="gold">Gold</option></select></label></div>}
     {doubleSided&&<><label className="gift-same-photo"><input type="checkbox" checked={samePhoto} onChange={event=>{setSamePhoto(event.target.checked);setSide("front");}} />Use the same photo and placement on both sides</label><div className="gift-mockup-actions"><button type="button" aria-pressed={side==="front"} onClick={()=>{setSide("front");setRotation(0);}}>Front photo</button><button type="button" aria-pressed={side==="back"} onClick={()=>{setSide("back");setRotation(180);}}>Back photo</button></div></>}
@@ -44,7 +44,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     }}/></label>
     {error&&<p role="alert" className="gift-validation">{error}</p>}
     <div className="gift-mockup-stage gift-realistic-stage" onPointerDown={event=>{drag.current={x:event.clientX,angle:rotation};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event=>{if(drag.current)setRotation(((drag.current.angle+(event.clientX-drag.current.x)*.7)%360+360)%360);}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}>
-      <MockupScene productId={productId} rotation={rotation} front={front} back={back} samePhoto={samePhoto} captureRef={capture} keychainShape={keychainShape} keychainFinish={keychainFinish} />
+      <MockupScene productId={productId} rotation={rotation} front={front} back={back} samePhoto={samePhoto} captureRef={capture} isActive={isActive} keychainShape={keychainShape} keychainFinish={keychainFinish} />
     </div>
     <p className="gift-mockup-caption">{name} · {detail}</p>
     <label className="gift-mockup-control">Rotate product <span>{Math.round(rotation)}°</span><input type="range" min="0" max="360" value={rotation} onChange={event=>setRotation(Number(event.target.value))}/></label>
@@ -54,7 +54,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     <label className="gift-mockup-control">Move left / right <span>{active.x}%</span><input type="range" min="-80" max="80" value={active.x} onChange={event=>update({x:Number(event.target.value)})}/></label>
     <label className="gift-mockup-control">Move down / up <span>{active.y}%</span><input type="range" min="-80" max="80" value={active.y} onChange={event=>update({y:Number(event.target.value)})}/></label>
     <div className="gift-mockup-actions"><button type="button" onClick={()=>{setRotation(0);update({scale:1,x:0,y:0});}}>Reset placement</button>{active.url&&<button type="button" onClick={()=>{originals.current[side==="back"&&doubleSided&&!samePhoto?"back":"front"]=null;update({url:null});}}>Remove photo</button>}</div>
-    <p className="gift-mockup-footnote">Your original photo and a four-view mockup can be shared with your enquiry. Preview shapes are based on the reference products.</p>
+    <p className="gift-mockup-footnote">Submit order includes links to your original photos and four-view mockup. Preview shapes are based on the reference products.</p>
   </section>;
 });
 export default GiftMockup;
