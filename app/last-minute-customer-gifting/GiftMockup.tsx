@@ -15,6 +15,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
   const [side,setSide]=useState<"front"|"back">("front");
   const [rotation,setRotation]=useState(0);
   const [error,setError]=useState("");
+  const [exporting,setExporting]=useState(false);
   const originals=useRef<{front:File|null;back:File|null}>({front:null,back:null});
   const urls=useRef<string[]>([]);
   const capture=useRef<null|(()=>Promise<File>)>(null);
@@ -27,7 +28,16 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     const files:File[]=[];
     if(originals.current.front) files.push(new File([originals.current.front],`front-${originals.current.front.name}`,{type:originals.current.front.type}));
     if(doubleSided&&!samePhoto&&originals.current.back)files.push(new File([originals.current.back],`back-${originals.current.back.name}`,{type:originals.current.back.type}));
-    if((front.url||(doubleSided&&!samePhoto&&back.url))&&capture.current)files.push(await capture.current());
+    if(front.url||(doubleSided&&!samePhoto&&back.url)){
+      setExporting(true);
+      try{
+        const started=Date.now();
+        const ready=await new Promise<()=>Promise<File>>((resolve,reject)=>{
+          const check=()=>{if(capture.current)resolve(capture.current);else if(Date.now()-started>10000)reject(new Error("The 3D mockup could not be prepared. Please reload the preview and try again."));else requestAnimationFrame(check);};check();
+        });
+        files.push(await ready());
+      }finally{setExporting(false);}
+    }
     return files;
   }}),[doubleSided,samePhoto,front,back]);
   return <section className="gift-mockup" aria-labelledby={`mockup-title-${productId}`}>
@@ -44,7 +54,7 @@ const GiftMockup=forwardRef<GiftMockupHandle,Props>(function GiftMockup({product
     }}/></label>
     {error&&<p role="alert" className="gift-validation">{error}</p>}
     <div className="gift-mockup-stage gift-realistic-stage" onPointerDown={event=>{drag.current={x:event.clientX,angle:rotation};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event=>{if(drag.current)setRotation(((drag.current.angle+(event.clientX-drag.current.x)*.7)%360+360)%360);}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}>
-      <MockupScene productId={productId} rotation={rotation} front={front} back={back} samePhoto={samePhoto} captureRef={capture} isActive={isActive} keychainShape={keychainShape} keychainFinish={keychainFinish} />
+      {(isActive||exporting)&&<MockupScene productId={productId} rotation={rotation} front={front} back={back} samePhoto={samePhoto} captureRef={capture} isActive={isActive} keychainShape={keychainShape} keychainFinish={keychainFinish} />}
     </div>
     <p className="gift-mockup-caption">{name} · {detail}</p>
     <label className="gift-mockup-control">Rotate product <span>{Math.round(rotation)}°</span><input type="range" min="0" max="360" value={rotation} onChange={event=>setRotation(Number(event.target.value))}/></label>

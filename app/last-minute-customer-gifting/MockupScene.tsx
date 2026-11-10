@@ -73,7 +73,7 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
     renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.35;
     host.appendChild(renderer.domElement);
-    const scene = new THREE.Scene();scene.background=new THREE.Color("#08090b");
+    const scene = new THREE.Scene();scene.background=new THREE.Color("#000000");
     const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
     const environment=pmrem.fromScene(room,.04);scene.environment=environment.texture;room.dispose();pmrem.dispose();
     const camera = new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(0,2.6,7.4);camera.lookAt(0,1.35,0);
@@ -156,13 +156,13 @@ export default function MockupScene({ productId, rotation, front, back, samePhot
         if(productId==="led-frame") add(new THREE.BoxGeometry(width+.12,.1,.3),white,0,y-height/2-.06,0);
       }
     }
-    const pedestal=add(new THREE.CylinderGeometry(1.65,1.7,.2,128),new THREE.MeshStandardMaterial({color:0x17191d,roughness:.72}),0,.22,0,scene);pedestal.receiveShadow=true;
-    const floor=add(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0x090a0c,roughness:.95}),0,.1,0,scene);floor.rotation.x=-Math.PI/2;
+    const pedestal=add(new THREE.CylinderGeometry(1.65,1.7,.2,128),new THREE.MeshBasicMaterial({color:0x000000,toneMapped:false}),0,.22,0,scene);pedestal.receiveShadow=true;
+    const floor=add(new THREE.PlaneGeometry(200,200),new THREE.MeshBasicMaterial({color:0x000000,toneMapped:false}),0,.1,0,scene);floor.rotation.x=-Math.PI/2;
     const resize=()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();render();};
     captureRef.current=async()=>{
       await Promise.all([printed.map?.userData.ready,rearPrinted.map?.userData.ready]);
       const collage=document.createElement("canvas");collage.width=1600;collage.height=1600;
-      const ctx=collage.getContext("2d")!;ctx.fillStyle="#08090b";ctx.fillRect(0,0,1600,1600);
+      const ctx=collage.getContext("2d")!;ctx.fillStyle="#000000";ctx.fillRect(0,0,1600,1600);
       const saved=group.rotation.y;
       [0,90,180,270].forEach((degrees,index)=>{
         group.rotation.y=degrees*Math.PI/180;render();
