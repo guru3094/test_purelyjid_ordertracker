@@ -33,6 +33,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
 
     {
+      url: `${baseUrl}/last-minute-customer-gifting`,
+      priority: 0.8,
+      changeFrequency: "monthly",
+    },
+
+    {
       url: `${baseUrl}/shipping`,
       priority: 0.4,
       changeFrequency: "yearly",

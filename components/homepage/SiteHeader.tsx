@@ -33,6 +33,7 @@ export default function SiteHeader() {
           <Link href="/our-story">Our Story</Link>
 
           <Link href="/vinylfonts">Custom Vinyls</Link>
+          <Link href="/last-minute-customer-gifting">Last Minute Customer Gifting</Link>
 
           <a
             href="https://www.instagram.com/purely_jid/"
@@ -92,6 +93,8 @@ export default function SiteHeader() {
         <Link href="/vinylfonts" onClick={closeMenu}>
           Custom Vinyls
         </Link>
+
+        <Link href="/last-minute-customer-gifting" onClick={closeMenu}>Last Minute Customer Gifting</Link>
 
         <a
           href="https://www.instagram.com/purely_jid/"

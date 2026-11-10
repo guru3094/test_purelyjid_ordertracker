@@ -203,3 +203,8 @@
   .studio-header .studio-brand-services { font-size: 6.5px; gap: 2px; }
   .studio-header .mobile-track-link { padding-inline: 9px; }
 }
+
+/* Keep the expanded gifting navigation comfortable on smaller screens. */
+@media(min-width:1101px){.studio-header .desktop-nav{gap:16px!important}.studio-header .desktop-nav a{max-width:145px}.studio-header .desktop-nav .track-link{white-space:nowrap}}
+@media(min-width:901px) and (max-width:1100px){.studio-header .desktop-nav{display:none}.studio-header .mobile-header-actions{display:flex}.studio-header .mobile-menu-button{display:flex}.studio-header .mobile-track-link{display:inline-flex}}
+@media(min-width:901px) and (max-width:1100px){.studio-header .mobile-menu-button{display:block}.studio-header .mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:60;display:grid;gap:0;padding:10px 20px 20px;border-bottom:1px solid #eadfce;box-shadow:0 18px 30px #1715121f;opacity:0;visibility:hidden;transform:translateY(-10px);pointer-events:none}.studio-header .mobile-nav-open{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}.studio-header .mobile-nav a{display:block;padding:15px 8px;border-bottom:1px solid #eee4d7;color:var(--ink);font-size:15px;font-weight:800}}
