@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { CanvaApiError } from "@/lib/canva/request.mjs";
 import { isStaffAuthenticated } from "@/lib/auth/staffAuth";
 import { generateCanvaOutline } from "@/app/cricut_svg/canva-outline";
 
@@ -18,6 +19,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(await generateCanvaOutline(content, fontCode), { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("Canva Cricut outline generation failed:", e);
+    if (e instanceof CanvaApiError) {
+      return NextResponse.json({ error: e.message, code: e.providerCode || "canva_request_failed", upstreamStatus: e.status }, {
+        status: e.status === 429 ? 429 : 502,
+        headers: { "Cache-Control": "no-store", ...(e.status === 429 && !e.quotaExceeded ? { "Retry-After": String(e.retryAfterSeconds || 30) } : {}) },
+      });
+    }
     return NextResponse.json({ error: e instanceof Error ? e.message : "Could not generate Canva vector outlines." }, { status: 502 });
   }
 }

@@ -5,7 +5,7 @@ import paper from "paper";
 import { getValidCanvaAccessToken } from "@/lib/canva/oauth";
 import { placeWordsOnOneLine } from "./word-layout";
 
-const API = "https://api.canva.com/rest/v1";
+import { canvaRequest } from "@/lib/canva/request.mjs";
 const PAGE: Record<string, number> = { PF01: 1, PF02: 2, PF03: 3, PF04: 4, PF05: 5, PF06: 6, PF07: 7, PF08: 8 };
 type Job = { job?: { id?: string; status?: string; result?: { design?: { id?: string } }; urls?: string[]; error?: { message?: string } } };
 type Outline = { path: string; bounds: { x1: number; y1: number; x2: number; y2: number }; fillRule: "nonzero" | "evenodd" };
@@ -51,22 +51,15 @@ function weldGlyphs(pathData: string): string {
 }
 
 async function canva<T>(token: string, endpoint: string, body?: unknown): Promise<T> {
-  const response = await fetch(`${API}${endpoint}`, {
-    method: body === undefined ? "GET" : "POST",
-    cache: "no-store",
-    headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  if (!response.ok) throw new Error(`Canva request failed (${response.status}). Check the Canva connection and template access.`);
-  return response.json() as Promise<T>;
+  return canvaRequest(token, endpoint, body) as Promise<T>;
 }
 
 async function waitForJob(token: string, endpoint: string): Promise<Job["job"]> {
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 20; i++) {
     const data = await canva<Job>(token, endpoint);
     if (data.job?.status === "success") return data.job;
     if (data.job?.status === "failed") throw new Error(data.job.error?.message || "Canva job failed.");
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
   throw new Error("Canva timed out while preparing the cut outline.");
 }
@@ -192,10 +185,8 @@ export async function generateCanvaOutline(content: string, fontCode: string): P
   // line; keep calls bounded to avoid flooding Canva's asynchronous jobs.
   const unique = [...new Set(words)];
   const outlines = new Map<string, Outline>();
-  for (let index = 0; index < unique.length; index += 3) {
-    const batch = unique.slice(index, index + 3);
-    const rendered = await Promise.all(batch.map(word => renderCanvaOutline(word, fontCode, token)));
-    batch.forEach((word, i) => outlines.set(word, rendered[i]));
+  for (const word of unique) {
+    outlines.set(word, await renderCanvaOutline(word, fontCode, token));
   }
   return placeWordsOnOneLine(words.map(word => outlines.get(word)!));
 }
